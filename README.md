@@ -49,6 +49,9 @@ Grow both halves of the game by constantly feeding one side into the other:
 - `Mouse`: click buttons and the cursor core
 - `Mouse` or `Touch`: click or tap inside the platformer pane to send the cursor there
 - Higher clicks or taps in the platformer trigger auto-jumps toward upper platforms
+- `A` / `D` or `Left` / `Right`: move the platformer cursor on desktop
+- `W`, `Up`, or `Space`: jump
+- `S` or `Down`: fast-fall while airborne
 - `Escape`: pause or resume
 
 ### Clicker Side
@@ -66,6 +69,7 @@ Grow both halves of the game by constantly feeding one side into the other:
 
 - Click or tap where you want the cursor to walk
 - Aim higher when you want to climb, and the cursor will auto-jump toward upper platforms
+- On desktop, you can also move with `WASD` or the arrow keys
 - Move through the desktop platforms and collect every floppy disk in the current wave
 - Once all floppies are collected, a `SAVE` terminal appears
 - Touch the `SAVE` terminal to cash in a wave bonus and start the next wave

@@ -654,8 +654,23 @@
     const player = platformerState.player;
     const nav = platformerState.navigation;
     const gravity = 650;
+    const leftHeld = isHeld("ArrowLeft", "KeyA");
+    const rightHeld = isHeld("ArrowRight", "KeyD");
+    const downHeld = isHeld("ArrowDown", "KeyS");
+    const jumpPressed = isPressed("ArrowUp", "KeyW", "Space");
+    const usingKeyboard = leftHeld || rightHeld || downHeld || jumpPressed;
 
-    if (nav.active) {
+    if (usingKeyboard) {
+      nav.active = false;
+    }
+
+    if (leftHeld && !rightHeld) {
+      player.vx = -stats.speed;
+      player.facing = -1;
+    } else if (rightHeld && !leftHeld) {
+      player.vx = stats.speed;
+      player.facing = 1;
+    } else if (nav.active) {
       const playerCenterX = player.x + player.w / 2;
       const dx = nav.targetX - playerCenterX;
       if (Math.abs(dx) > 5) {
@@ -673,7 +688,15 @@
       player.vx = lerp(player.vx, 0, dt * 10);
     }
 
+    if (jumpPressed && player.onGround) {
+      player.vy = -stats.jump;
+      player.onGround = false;
+    }
+
     player.vy += gravity * dt;
+    if (downHeld && !player.onGround) {
+      player.vy += gravity * 0.7 * dt;
+    }
     movePlayer(dt);
 
     if (nav.active && hasReachedNavigationTarget(player, nav)) {
@@ -1228,7 +1251,7 @@
     drawText("Floppy Disks", inner.x + 10, inner.y + 10, 12, true, theme.text);
     drawText(formatNumber(platformerState.disks), inner.x + 102, inner.y + 10, 14, true, theme.success);
     drawText("Wave " + platformerState.wave, inner.x + 210, inner.y + 10, 12, false, theme.text);
-    drawText("Click or tap the stage to walk. Higher clicks auto-jump.", inner.x + 246, inner.y + 10, 11, false, theme.textMuted);
+    drawText("Click/tap to walk, or use WASD / arrows. Higher targets auto-jump.", inner.x + 188, inner.y + 10, 11, false, theme.textMuted);
 
     const view = { x: inner.x, y: inner.y + 32, w: inner.w, h: 150 };
     addUiRegion({
@@ -1327,8 +1350,8 @@
     const lines = [
       "Left panel: click the cursor core to earn Cursor Points.",
       "Spend floppy disks on the left shop to improve clicking power, auto-click, and crits.",
-      "Right panel: click or tap where you want the cursor to walk.",
-      "If you click higher platforms, the cursor auto-jumps up to them.",
+      "Right panel: click or tap where you want the cursor to walk, or use WASD / arrows.",
+      "W, Up, or Space jumps. S or Down helps you fast-fall. Higher click targets auto-jump.",
       "Collect every floppy disk, then touch the SAVE terminal for a wave bonus.",
       "Spend Cursor Points on the right shop to improve movement, jumps, disk value, spawns, and magnet pull.",
       "Cursor skins are shared cosmetic gear with tiny flavor bonuses. Some are bought, some unlock by milestones.",
