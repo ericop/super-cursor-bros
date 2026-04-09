@@ -142,12 +142,6 @@
     hoveredTooltipPos: { x: 0, y: 0 },
     keys: {},
     pressedKeys: {},
-    virtualControls: {
-      ArrowLeft: false,
-      ArrowRight: false,
-      ArrowUp: false,
-      ArrowDown: false
-    },
     drag: null,
     saveDirty: false,
     saveTimer: 0
@@ -244,6 +238,12 @@
         vy: 0,
         facing: 1,
         onGround: false
+      },
+      navigation: {
+        active: false,
+        targetX: 24,
+        targetY: 115,
+        targetPlatformY: 138
       },
       world: { x: 0, y: 0, w: 480, h: 156 },
       platforms: createPlatforms(),
@@ -425,7 +425,6 @@
     runtime.mouse.down = true;
     unlockAudio();
     syncTouchPointer(event.touches);
-    updateVirtualControlsFromTouches(event.touches);
 
     const touch = event.changedTouches[0];
     if (!touch) {
@@ -433,7 +432,7 @@
     }
     const point = getCanvasPoint(touch);
     const region = findTopRegion(point.x, point.y);
-    if (!region || region.disabled || region.holdKey) {
+    if (!region || region.disabled) {
       return;
     }
 
@@ -451,7 +450,6 @@
   function handleTouchMove(event) {
     event.preventDefault();
     syncTouchPointer(event.touches);
-    updateVirtualControlsFromTouches(event.touches);
     if (runtime.drag && runtime.drag.type === "volume" && event.touches[0]) {
       const point = getCanvasPoint(event.touches[0]);
       updateVolumeFromSlider(point.x, runtime.drag.rect);
@@ -461,7 +459,6 @@
   function handleTouchEnd(event) {
     event.preventDefault();
     syncTouchPointer(event.touches);
-    updateVirtualControlsFromTouches(event.touches);
     if (!event.touches.length) {
       runtime.mouse.down = false;
       runtime.drag = null;
@@ -493,27 +490,6 @@
     const point = getCanvasPoint(touches[0]);
     runtime.mouse.x = point.x;
     runtime.mouse.y = point.y;
-  }
-
-  function updateVirtualControlsFromTouches(touches) {
-    runtime.virtualControls.ArrowLeft = false;
-    runtime.virtualControls.ArrowRight = false;
-    runtime.virtualControls.ArrowUp = false;
-    runtime.virtualControls.ArrowDown = false;
-
-    if (!touches || !touches.length) {
-      return;
-    }
-
-    for (let i = 0; i < touches.length; i += 1) {
-      const point = getCanvasPoint(touches[i]);
-      for (let j = runtime.uiRegions.length - 1; j >= 0; j -= 1) {
-        const region = runtime.uiRegions[j];
-        if (region.holdKey && pointInRect(point.x, point.y, region.rect)) {
-          runtime.virtualControls[region.holdKey] = true;
-        }
-      }
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -676,38 +652,41 @@
 
     const stats = getPlatformerStats();
     const player = platformerState.player;
+    const nav = platformerState.navigation;
     const gravity = 650;
-    const leftHeld = isHeld("ArrowLeft", "KeyA");
-    const rightHeld = isHeld("ArrowRight", "KeyD");
-    const downHeld = isHeld("ArrowDown", "KeyS");
-    const wantsJump = isPressed("ArrowUp") || isPressed("KeyW") || isPressed("Space");
 
-    if (leftHeld && !rightHeld) {
-      player.vx = -stats.speed;
-      player.facing = -1;
-    } else if (rightHeld && !leftHeld) {
-      player.vx = stats.speed;
-      player.facing = 1;
+    if (nav.active) {
+      const playerCenterX = player.x + player.w / 2;
+      const dx = nav.targetX - playerCenterX;
+      if (Math.abs(dx) > 5) {
+        player.vx = Math.sign(dx) * stats.speed;
+        player.facing = dx < 0 ? -1 : 1;
+      } else {
+        player.vx = lerp(player.vx, 0, dt * 10);
+      }
+
+      if (player.onGround && shouldAutoJumpToTarget(player, nav, stats)) {
+        player.vy = -stats.jump;
+        player.onGround = false;
+      }
     } else {
       player.vx = lerp(player.vx, 0, dt * 10);
     }
 
-    if (wantsJump && player.onGround) {
-      player.vy = -stats.jump;
-      player.onGround = false;
-    }
-
     player.vy += gravity * dt;
-    if (downHeld && !player.onGround) {
-      player.vy += gravity * 0.7 * dt;
-    }
     movePlayer(dt);
+
+    if (nav.active && hasReachedNavigationTarget(player, nav)) {
+      nav.active = false;
+      player.vx = lerp(player.vx, 0, dt * 10);
+    }
 
     if (player.y > platformerState.world.h + 32) {
       player.x = 24;
       player.y = 115;
       player.vx = 0;
       player.vy = 0;
+      nav.active = false;
       platformerState.hintFlash = 1;
       setNotification("The desktop swallowed you. Rebooting position...");
     }
@@ -725,6 +704,20 @@
     }
 
     platformerState.hintFlash = Math.max(0, platformerState.hintFlash - dt * 2);
+  }
+
+  function shouldAutoJumpToTarget(player, nav, stats) {
+    const playerCenterX = player.x + player.w / 2;
+    const dx = nav.targetX - playerCenterX;
+    const higherTarget = nav.targetY < player.y - 10;
+    return higherTarget && Math.abs(dx) > 8 && Math.abs(dx) < Math.max(72, stats.speed * 0.58);
+  }
+
+  function hasReachedNavigationTarget(player, nav) {
+    const playerCenterX = player.x + player.w / 2;
+    const closeX = Math.abs(nav.targetX - playerCenterX) <= 6;
+    const closeY = Math.abs(nav.targetY - player.y) <= 8;
+    return closeX && (closeY || nav.targetY >= player.y - 6);
   }
 
   function movePlayer(dt) {
@@ -1235,12 +1228,20 @@
     drawText("Floppy Disks", inner.x + 10, inner.y + 10, 12, true, theme.text);
     drawText(formatNumber(platformerState.disks), inner.x + 102, inner.y + 10, 14, true, theme.success);
     drawText("Wave " + platformerState.wave, inner.x + 210, inner.y + 10, 12, false, theme.text);
-    drawText("A/D or arrows move, W/Up/Space jumps", inner.x + 296, inner.y + 10, 11, false, theme.textMuted);
+    drawText("Click or tap the stage to walk. Higher clicks auto-jump.", inner.x + 246, inner.y + 10, 11, false, theme.textMuted);
 
     const view = { x: inner.x, y: inner.y + 32, w: inner.w, h: 150 };
+    addUiRegion({
+      type: "button",
+      rect: view,
+      tooltip: "Click or tap inside the platformer to send the cursor there.",
+      onClick: function () {
+        setPlatformerDestinationFromView(view, runtime.mouse.x, runtime.mouse.y);
+      }
+    });
     drawPlatformWorld(theme, view);
-    if (shouldShowTouchControls()) {
-      drawTouchControls(theme, view);
+    if (pointInRect(runtime.mouse.x, runtime.mouse.y, view)) {
+      setTooltip("Click or tap inside the platformer to send the cursor there.", runtime.mouse.x + 8, runtime.mouse.y + 12);
     }
 
     drawFlatPanel(inner.x, inner.y + 188, inner.w, 68, theme.panelAlt, theme);
@@ -1326,7 +1327,8 @@
     const lines = [
       "Left panel: click the cursor core to earn Cursor Points.",
       "Spend floppy disks on the left shop to improve clicking power, auto-click, and crits.",
-      "Right panel: move with A/D or arrows and jump with W, Up, or Space.",
+      "Right panel: click or tap where you want the cursor to walk.",
+      "If you click higher platforms, the cursor auto-jumps up to them.",
       "Collect every floppy disk, then touch the SAVE terminal for a wave bonus.",
       "Spend Cursor Points on the right shop to improve movement, jumps, disk value, spawns, and magnet pull.",
       "Cursor skins are shared cosmetic gear with tiny flavor bonuses. Some are bought, some unlock by milestones.",
@@ -1570,6 +1572,19 @@
       drawText("+" + formatNumber(goal.bonus), gx + 2, gy + 22, 9, false, theme.success);
     }
 
+    if (platformerState.navigation.active) {
+      const markerX = toScreenX(platformerState.navigation.targetX);
+      const markerY = toScreenY(platformerState.navigation.targetPlatformY - 8);
+      ctx.strokeStyle = theme.accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(markerX - 6, markerY);
+      ctx.lineTo(markerX + 6, markerY);
+      ctx.moveTo(markerX, markerY - 6);
+      ctx.lineTo(markerX, markerY + 6);
+      ctx.stroke();
+    }
+
     const player = platformerState.player;
     drawPlayer(toScreenX(player.x + player.w / 2), toScreenY(player.y + player.h / 2), 1, theme, player.facing);
 
@@ -1597,35 +1612,37 @@
     ctx.restore();
   }
 
-  function drawTouchControls(theme, view) {
-    const pad = {
-      x: view.x + view.w - 94,
-      y: view.y + view.h - 48,
-      w: 88,
-      h: 42
-    };
-    ctx.globalAlpha = 0.88;
-    drawFlatPanel(pad.x, pad.y, pad.w, pad.h, theme.panelAlt, theme);
-    ctx.globalAlpha = 1;
+  function setPlatformerDestinationFromView(view, screenX, screenY) {
+    const world = platformerState.world;
+    const localX = clamp(screenX - view.x, 0, view.w);
+    const localY = clamp(screenY - view.y, 0, view.h);
+    const worldX = clamp((localX / view.w) * world.w, 8, world.w - 8);
+    const worldY = clamp((localY / view.h) * world.h, 0, world.h);
+    const targetPlatform = findPlatformForDestination(worldX, worldY);
 
-    const buttons = [
-      { key: "ArrowUp", dir: "up", rect: { x: pad.x + 30, y: pad.y + 2, w: 28, h: 18 } },
-      { key: "ArrowLeft", dir: "left", rect: { x: pad.x + 2, y: pad.y + 22, w: 28, h: 18 } },
-      { key: "ArrowDown", dir: "down", rect: { x: pad.x + 30, y: pad.y + 22, w: 28, h: 18 } },
-      { key: "ArrowRight", dir: "right", rect: { x: pad.x + 58, y: pad.y + 22, w: 28, h: 18 } }
-    ];
+    platformerState.navigation.active = true;
+    platformerState.navigation.targetX = worldX;
+    platformerState.navigation.targetPlatformY = targetPlatform.y;
+    platformerState.navigation.targetY = targetPlatform.y - platformerState.player.h;
+  }
 
-    buttons.forEach(function (button) {
-      const active = !!runtime.virtualControls[button.key];
-      drawButtonBase(button.rect.x, button.rect.y, button.rect.w, button.rect.h, active, false, theme, active);
-      drawDirectionGlyph(button.dir, button.rect, theme, active);
-      addUiRegion({
-        type: "hold",
-        holdKey: button.key,
-        rect: button.rect,
-        tooltip: ""
-      });
-    });
+  function findPlatformForDestination(worldX, worldY) {
+    let best = platformerState.platforms[0];
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (let i = 0; i < platformerState.platforms.length; i += 1) {
+      const platform = platformerState.platforms[i];
+      if (worldX < platform.x - 8 || worldX > platform.x + platform.w + 8) {
+        continue;
+      }
+      const score = Math.abs(platform.y - worldY);
+      if (score < bestScore) {
+        best = platform;
+        bestScore = score;
+      }
+    }
+
+    return best;
   }
 
   // ---------------------------------------------------------------------------
@@ -1929,33 +1946,6 @@
     ctx.fillRect(size * 0.04, -size * 0.06, size * 0.06, size * 0.08);
   }
 
-  function drawDirectionGlyph(direction, rect, theme, active) {
-    const cx = rect.x + rect.w / 2;
-    const cy = rect.y + rect.h / 2;
-    const size = 6;
-    ctx.fillStyle = active ? theme.accent : theme.text;
-    ctx.beginPath();
-    if (direction === "up") {
-      ctx.moveTo(cx, cy - size);
-      ctx.lineTo(cx - size, cy + size - 1);
-      ctx.lineTo(cx + size, cy + size - 1);
-    } else if (direction === "down") {
-      ctx.moveTo(cx, cy + size);
-      ctx.lineTo(cx - size, cy - size + 1);
-      ctx.lineTo(cx + size, cy - size + 1);
-    } else if (direction === "left") {
-      ctx.moveTo(cx - size, cy);
-      ctx.lineTo(cx + size - 1, cy - size);
-      ctx.lineTo(cx + size - 1, cy + size);
-    } else {
-      ctx.moveTo(cx + size, cy);
-      ctx.lineTo(cx - size + 1, cy - size);
-      ctx.lineTo(cx - size + 1, cy + size);
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
-
   // ---------------------------------------------------------------------------
   // Shared utilities
   // ---------------------------------------------------------------------------
@@ -2055,7 +2045,7 @@
 
   function isHeld() {
     for (let i = 0; i < arguments.length; i += 1) {
-      if (runtime.keys[arguments[i]] || runtime.virtualControls[arguments[i]]) {
+      if (runtime.keys[arguments[i]]) {
         return true;
       }
     }
@@ -2081,10 +2071,6 @@
 
   function getTheme() {
     return settingsState.darkMode ? THEMES.dark : THEMES.light;
-  }
-
-  function shouldShowTouchControls() {
-    return !!(("ontouchstart" in window) || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0);
   }
 
   function skinUnlockLabel(skin) {
