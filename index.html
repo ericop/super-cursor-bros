@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Cursor Bros</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #3b5f90 0%, #244267 38%, #11243f 100%);
+      font-family: "MS Sans Serif", Tahoma, Geneva, sans-serif;
+      color: #111;
+    }
+    #gameShell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      border: 2px solid #0f1930;
+      background: #99a9c0;
+      box-shadow: inset 1px 1px 0 #e7ecf4, inset -1px -1px 0 #576983, 0 18px 42px rgba(0, 0, 0, 0.35);
+    }
+    #canvasWrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: min(96vw, 840px);
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #c0c0c0;
+      border: 2px solid #0a0a0a;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #4a4a4a;
+    }
+    .toolbar {
+      width: min(96vw, 840px);
+      display: flex;
+      justify-content: flex-end;
+    }
+    button {
+      appearance: none;
+      border: 2px solid #111;
+      background: #c0c0c0;
+      color: #111;
+      padding: 6px 12px;
+      font: 700 12px "MS Sans Serif", Tahoma, Geneva, sans-serif;
+      cursor: pointer;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #5c5c5c;
+    }
+    button:active {
+      box-shadow: inset 1px 1px 0 #5c5c5c, inset -1px -1px 0 #fff;
+      transform: translateY(1px);
+    }
+    #gameShell:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      justify-content: center;
+      background: radial-gradient(circle at top, #0d1e35 0%, #07111f 100%);
+      border: none;
+      box-shadow: none;
+    }
+    #gameShell:fullscreen #canvasWrap { width: min(96vw, calc(96vh * 2.625)); }
+    #gameShell:fullscreen .toolbar { width: min(96vw, calc(96vh * 2.625)); }
+  </style>
+</head>
+<body>
+  <div id="gameShell">
+    <div class="toolbar">
+      <button id="fullscreenButton" type="button">Toggle Fullscreen</button>
+    </div>
+    <div id="canvasWrap">
+      <canvas id="gameCanvas" width="840" height="320" aria-label="Super Cursor Bros game canvas"></canvas>
+    </div>
+  </div>
+  <script src="super-cursor-bros.js"></script>
+</body>
+</html>
