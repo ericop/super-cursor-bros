@@ -152,6 +152,7 @@
     skinReturnState: GAME_STATES.MAIN_MENU,
     selectedSkinId: "classic",
     bootTicker: 0,
+    showControlModal: false,
     notification: "",
     notificationTimer: 0
   };
@@ -518,7 +519,7 @@
       }
     }
 
-    if (gameState.mode === GAME_STATES.PLAYING) {
+    if (gameState.mode === GAME_STATES.PLAYING && !gameState.showControlModal) {
       updateClicker(dt);
       updatePlatformer(dt);
       checkSkinUnlocks();
@@ -1110,6 +1111,9 @@
       renderSkinSelect(theme);
     } else if (gameState.mode === GAME_STATES.PLAYING) {
       renderPlaying(theme, false);
+      if (gameState.showControlModal) {
+        renderControlModal(theme);
+      }
     } else if (gameState.mode === GAME_STATES.PAUSED) {
       renderPlaying(theme, true);
       renderPauseMenu(theme);
@@ -1197,14 +1201,25 @@
     drawFlatPanel(contentX, contentY + 172, contentW, 88, theme.panelAlt, theme);
     drawText("Disk Shop: clicker upgrades", contentX + 8, contentY + 185, 12, true, theme.text);
 
-    const rowH = 14;
+    const shopCols = 2;
+    const rowH = 16;
+    const rowGap = 3;
+    const colGap = 6;
+    const buttonW = Math.floor((contentW - 16 - colGap) / shopCols);
     CLICKER_UPGRADES.forEach(function (upgrade, index) {
       const level = clickerState.upgradeLevels[upgrade.id];
       const cost = getUpgradeCost(upgrade, level);
       const disabled = level >= upgrade.maxLevel || platformerState.disks < cost;
       const label = level >= upgrade.maxLevel ? "MAX" : formatNumber(cost) + " disks";
+      const col = index % shopCols;
+      const row = Math.floor(index / shopCols);
       registerButton(
-        { x: contentX + 8, y: contentY + 194 + index * (rowH + 1), w: contentW - 16, h: rowH },
+        {
+          x: contentX + 8 + col * (buttonW + colGap),
+          y: contentY + 194 + row * (rowH + rowGap),
+          w: buttonW,
+          h: rowH
+        },
         upgrade.name + " Lv" + level,
         function () {
           buyClickerUpgrade(upgrade.id);
@@ -1250,22 +1265,18 @@
     drawFlatPanel(inner.x, inner.y, inner.w, 26, theme.panelAlt, theme);
     drawText("Floppy Disks", inner.x + 10, inner.y + 10, 12, true, theme.text);
     drawText(formatNumber(platformerState.disks), inner.x + 102, inner.y + 10, 14, true, theme.success);
-    drawText("Wave " + platformerState.wave, inner.x + 210, inner.y + 10, 12, false, theme.text);
-    drawText("Click/tap to walk, or use WASD / arrows. Higher targets auto-jump.", inner.x + 188, inner.y + 10, 11, false, theme.textMuted);
+    drawText("Wave " + platformerState.wave, inner.x + inner.w - 10, inner.y + 10, 12, false, theme.text, "right");
 
     const view = { x: inner.x, y: inner.y + 32, w: inner.w, h: 150 };
     addUiRegion({
       type: "button",
       rect: view,
-      tooltip: "Click or tap inside the platformer to send the cursor there.",
+      tooltip: "",
       onClick: function () {
         setPlatformerDestinationFromView(view, runtime.mouse.x, runtime.mouse.y);
       }
     });
     drawPlatformWorld(theme, view);
-    if (pointInRect(runtime.mouse.x, runtime.mouse.y, view)) {
-      setTooltip("Click or tap inside the platformer to send the cursor there.", runtime.mouse.x + 8, runtime.mouse.y + 12);
-    }
 
     drawFlatPanel(inner.x, inner.y + 188, inner.w, 68, theme.panelAlt, theme);
     drawText("Cursor Point Shop: platformer upgrades", inner.x + 8, inner.y + 200, 12, true, theme.text);
@@ -1327,7 +1338,14 @@
     drawText(getSkin().bonusText, x + 364, y + 168, 10, false, theme.textMuted);
 
     const buttons = [
-      { label: "Start Game", onClick: function () { resetRunState(); gameState.mode = GAME_STATES.PLAYING; } },
+      {
+        label: "Start Game",
+        onClick: function () {
+          resetRunState();
+          gameState.showControlModal = true;
+          gameState.mode = GAME_STATES.PLAYING;
+        }
+      },
       { label: "Instructions", onClick: function () { gameState.skinReturnState = GAME_STATES.MAIN_MENU; gameState.mode = GAME_STATES.INSTRUCTIONS; } },
       { label: "Cursor Skins", onClick: function () { gameState.skinReturnState = GAME_STATES.MAIN_MENU; gameState.mode = GAME_STATES.SKIN_SELECT; } },
       { label: "Toggle Fullscreen", onClick: function () { toggleFullscreen(); } }
@@ -1369,6 +1387,34 @@
       "Back",
       function () {
         gameState.mode = gameState.skinReturnState || GAME_STATES.MAIN_MENU;
+      },
+      { theme: theme }
+    );
+  }
+
+  function renderControlModal(theme) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    addUiRegion({
+      type: "button",
+      rect: { x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
+      tooltip: "",
+      onClick: function () {}
+    });
+
+    drawWindow(206, 66, 428, 176, "Control Setup", theme);
+    drawText("Platformer Controls", 226, 94, 16, true, theme.accent);
+    drawText("Click or tap anywhere in the platformer window to walk there.", 226, 118, 12, false, theme.text);
+    drawText("Aim higher and the cursor will auto-jump to upper platforms.", 226, 138, 12, false, theme.text);
+    drawText("Desktop option: A / D or Left / Right moves, W / Up / Space jumps.", 226, 158, 12, false, theme.text);
+    drawText("S or Down makes fast-falls easier when you are airborne.", 226, 178, 12, false, theme.textMuted);
+    drawText("This window shows once per run so the desk can breathe afterward.", 226, 198, 11, false, theme.textMuted);
+
+    registerButton(
+      { x: 472, y: 210, w: 130, h: 22 },
+      "Start Working",
+      function () {
+        gameState.showControlModal = false;
       },
       { theme: theme }
     );
