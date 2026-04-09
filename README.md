@@ -2,6 +2,8 @@
 
 Super Cursor Bros is a tiny retro hybrid game where a clicker and a platformer share one screen, one canvas, and one progression loop. You click on the left to earn Cursor Points that power up the platformer on the right, then you platform for Floppy Disks that come back and upgrade your clicker. The result is meant to feel like an old Windows desktop utility accidentally became a game and then got a little too ambitious.
 
+Try the game at [https://ericop.github.io/super-cursor-bro/](https://ericop.github.io/super-cursor-bro/).
+
 ## Elevator Pitch
 
 `Super Cursor Bros` is a single-screen HTML5 canvas prototype that merges two satisfying loops into one:
