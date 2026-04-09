@@ -142,6 +142,12 @@
     hoveredTooltipPos: { x: 0, y: 0 },
     keys: {},
     pressedKeys: {},
+    virtualControls: {
+      ArrowLeft: false,
+      ArrowRight: false,
+      ArrowUp: false,
+      ArrowDown: false
+    },
     drag: null,
     saveDirty: false,
     saveTimer: 0
@@ -320,6 +326,10 @@
   function bindEvents() {
     canvas.addEventListener("mousemove", handlePointerMove);
     canvas.addEventListener("mousedown", handlePointerDown);
+    canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+    canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
+    canvas.addEventListener("touchcancel", handleTouchEnd, { passive: false });
     window.addEventListener("mouseup", handlePointerUp);
     canvas.addEventListener("mouseleave", handlePointerUp);
     canvas.addEventListener("contextmenu", function (event) {
@@ -358,7 +368,7 @@
   }
 
   function isGameControlKey(code) {
-    return ["ArrowLeft", "ArrowRight", "ArrowUp", "KeyA", "KeyD", "KeyW", "Space", "Escape"].includes(code);
+    return ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS", "Space", "Escape"].includes(code);
   }
 
   function handleEscape() {
@@ -410,6 +420,54 @@
     runtime.drag = null;
   }
 
+  function handleTouchStart(event) {
+    event.preventDefault();
+    runtime.mouse.down = true;
+    unlockAudio();
+    syncTouchPointer(event.touches);
+    updateVirtualControlsFromTouches(event.touches);
+
+    const touch = event.changedTouches[0];
+    if (!touch) {
+      return;
+    }
+    const point = getCanvasPoint(touch);
+    const region = findTopRegion(point.x, point.y);
+    if (!region || region.disabled || region.holdKey) {
+      return;
+    }
+
+    if (region.type === "slider") {
+      runtime.drag = { type: "volume", rect: region.rect };
+      updateVolumeFromSlider(point.x, region.rect);
+      return;
+    }
+
+    if (typeof region.onClick === "function") {
+      region.onClick();
+    }
+  }
+
+  function handleTouchMove(event) {
+    event.preventDefault();
+    syncTouchPointer(event.touches);
+    updateVirtualControlsFromTouches(event.touches);
+    if (runtime.drag && runtime.drag.type === "volume" && event.touches[0]) {
+      const point = getCanvasPoint(event.touches[0]);
+      updateVolumeFromSlider(point.x, runtime.drag.rect);
+    }
+  }
+
+  function handleTouchEnd(event) {
+    event.preventDefault();
+    syncTouchPointer(event.touches);
+    updateVirtualControlsFromTouches(event.touches);
+    if (!event.touches.length) {
+      runtime.mouse.down = false;
+      runtime.drag = null;
+    }
+  }
+
   function getCanvasPoint(event) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -426,6 +484,36 @@
       }
     }
     return null;
+  }
+
+  function syncTouchPointer(touches) {
+    if (!touches || !touches.length) {
+      return;
+    }
+    const point = getCanvasPoint(touches[0]);
+    runtime.mouse.x = point.x;
+    runtime.mouse.y = point.y;
+  }
+
+  function updateVirtualControlsFromTouches(touches) {
+    runtime.virtualControls.ArrowLeft = false;
+    runtime.virtualControls.ArrowRight = false;
+    runtime.virtualControls.ArrowUp = false;
+    runtime.virtualControls.ArrowDown = false;
+
+    if (!touches || !touches.length) {
+      return;
+    }
+
+    for (let i = 0; i < touches.length; i += 1) {
+      const point = getCanvasPoint(touches[i]);
+      for (let j = runtime.uiRegions.length - 1; j >= 0; j -= 1) {
+        const region = runtime.uiRegions[j];
+        if (region.holdKey && pointInRect(point.x, point.y, region.rect)) {
+          runtime.virtualControls[region.holdKey] = true;
+        }
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -591,6 +679,7 @@
     const gravity = 650;
     const leftHeld = isHeld("ArrowLeft", "KeyA");
     const rightHeld = isHeld("ArrowRight", "KeyD");
+    const downHeld = isHeld("ArrowDown", "KeyS");
     const wantsJump = isPressed("ArrowUp") || isPressed("KeyW") || isPressed("Space");
 
     if (leftHeld && !rightHeld) {
@@ -609,6 +698,9 @@
     }
 
     player.vy += gravity * dt;
+    if (downHeld && !player.onGround) {
+      player.vy += gravity * 0.7 * dt;
+    }
     movePlayer(dt);
 
     if (player.y > platformerState.world.h + 32) {
@@ -1147,6 +1239,9 @@
 
     const view = { x: inner.x, y: inner.y + 32, w: inner.w, h: 150 };
     drawPlatformWorld(theme, view);
+    if (shouldShowTouchControls()) {
+      drawTouchControls(theme, view);
+    }
 
     drawFlatPanel(inner.x, inner.y + 188, inner.w, 68, theme.panelAlt, theme);
     drawText("Cursor Point Shop: platformer upgrades", inner.x + 8, inner.y + 200, 12, true, theme.text);
@@ -1502,6 +1597,37 @@
     ctx.restore();
   }
 
+  function drawTouchControls(theme, view) {
+    const pad = {
+      x: view.x + view.w - 94,
+      y: view.y + view.h - 48,
+      w: 88,
+      h: 42
+    };
+    ctx.globalAlpha = 0.88;
+    drawFlatPanel(pad.x, pad.y, pad.w, pad.h, theme.panelAlt, theme);
+    ctx.globalAlpha = 1;
+
+    const buttons = [
+      { key: "ArrowUp", dir: "up", rect: { x: pad.x + 30, y: pad.y + 2, w: 28, h: 18 } },
+      { key: "ArrowLeft", dir: "left", rect: { x: pad.x + 2, y: pad.y + 22, w: 28, h: 18 } },
+      { key: "ArrowDown", dir: "down", rect: { x: pad.x + 30, y: pad.y + 22, w: 28, h: 18 } },
+      { key: "ArrowRight", dir: "right", rect: { x: pad.x + 58, y: pad.y + 22, w: 28, h: 18 } }
+    ];
+
+    buttons.forEach(function (button) {
+      const active = !!runtime.virtualControls[button.key];
+      drawButtonBase(button.rect.x, button.rect.y, button.rect.w, button.rect.h, active, false, theme, active);
+      drawDirectionGlyph(button.dir, button.rect, theme, active);
+      addUiRegion({
+        type: "hold",
+        holdKey: button.key,
+        rect: button.rect,
+        tooltip: ""
+      });
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Drawing helpers
   // ---------------------------------------------------------------------------
@@ -1803,6 +1929,33 @@
     ctx.fillRect(size * 0.04, -size * 0.06, size * 0.06, size * 0.08);
   }
 
+  function drawDirectionGlyph(direction, rect, theme, active) {
+    const cx = rect.x + rect.w / 2;
+    const cy = rect.y + rect.h / 2;
+    const size = 6;
+    ctx.fillStyle = active ? theme.accent : theme.text;
+    ctx.beginPath();
+    if (direction === "up") {
+      ctx.moveTo(cx, cy - size);
+      ctx.lineTo(cx - size, cy + size - 1);
+      ctx.lineTo(cx + size, cy + size - 1);
+    } else if (direction === "down") {
+      ctx.moveTo(cx, cy + size);
+      ctx.lineTo(cx - size, cy - size + 1);
+      ctx.lineTo(cx + size, cy - size + 1);
+    } else if (direction === "left") {
+      ctx.moveTo(cx - size, cy);
+      ctx.lineTo(cx + size - 1, cy - size);
+      ctx.lineTo(cx + size - 1, cy + size);
+    } else {
+      ctx.moveTo(cx + size, cy);
+      ctx.lineTo(cx - size + 1, cy - size);
+      ctx.lineTo(cx - size + 1, cy + size);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
   // ---------------------------------------------------------------------------
   // Shared utilities
   // ---------------------------------------------------------------------------
@@ -1902,7 +2055,7 @@
 
   function isHeld() {
     for (let i = 0; i < arguments.length; i += 1) {
-      if (runtime.keys[arguments[i]]) {
+      if (runtime.keys[arguments[i]] || runtime.virtualControls[arguments[i]]) {
         return true;
       }
     }
@@ -1930,6 +2083,10 @@
     return settingsState.darkMode ? THEMES.dark : THEMES.light;
   }
 
+  function shouldShowTouchControls() {
+    return !!(("ontouchstart" in window) || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0);
+  }
+
   function skinUnlockLabel(skin) {
     if (skin.unlock.type === "buy") {
       return "Buy: " + skin.unlock.amount + (skin.unlock.currency === "disks" ? " disks" : " CP");
@@ -1947,12 +2104,30 @@
   }
 
   function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      gameShell.requestFullscreen().catch(function () {
-        setNotification("Fullscreen request was denied by the browser.");
-      });
+    const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    if (!fullscreenElement) {
+      const target =
+        (gameShell.requestFullscreen || gameShell.webkitRequestFullscreen || gameShell.msRequestFullscreen)
+          ? gameShell
+          : document.documentElement;
+      const request = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
+
+      if (!request) {
+        setNotification("Fullscreen is not supported on this browser.");
+        return;
+      }
+
+      Promise.resolve(request.call(target))
+        .catch(function () {
+          setNotification("Fullscreen request was denied by the browser.");
+        });
     } else {
-      document.exitFullscreen().catch(function () {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (!exit) {
+        setNotification("Could not exit fullscreen on this browser.");
+        return;
+      }
+      Promise.resolve(exit.call(document)).catch(function () {
         setNotification("Could not exit fullscreen cleanly.");
       });
     }

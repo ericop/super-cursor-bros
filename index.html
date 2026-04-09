@@ -42,6 +42,7 @@
       background: #c0c0c0;
       border: 2px solid #0a0a0a;
       box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #4a4a4a;
+      touch-action: none;
     }
     .toolbar {
       width: min(96vw, 840px);
@@ -56,13 +57,15 @@
       padding: 6px 12px;
       font: 700 12px "MS Sans Serif", Tahoma, Geneva, sans-serif;
       cursor: pointer;
+      touch-action: manipulation;
       box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #5c5c5c;
     }
     button:active {
       box-shadow: inset 1px 1px 0 #5c5c5c, inset -1px -1px 0 #fff;
       transform: translateY(1px);
     }
-    #gameShell:fullscreen {
+    #gameShell:fullscreen,
+    #gameShell:-webkit-full-screen {
       width: 100vw;
       height: 100vh;
       justify-content: center;
@@ -70,8 +73,10 @@
       border: none;
       box-shadow: none;
     }
-    #gameShell:fullscreen #canvasWrap { width: min(96vw, calc(96vh * 2.625)); }
-    #gameShell:fullscreen .toolbar { width: min(96vw, calc(96vh * 2.625)); }
+    #gameShell:fullscreen #canvasWrap,
+    #gameShell:-webkit-full-screen #canvasWrap { width: min(96vw, calc(96vh * 2.625)); }
+    #gameShell:fullscreen .toolbar,
+    #gameShell:-webkit-full-screen .toolbar { width: min(96vw, calc(96vh * 2.625)); }
   </style>
 </head>
 <body>
