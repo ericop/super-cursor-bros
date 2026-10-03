@@ -89,8 +89,8 @@
   };
 
   const CLICKER_UPGRADES = [
-    { id: "clickPower", name: "Click Value", short: "Manual taps +1.", baseCost: 7, scale: 1.72, maxLevel: 8 },
-    { id: "autoClick", name: "Auto Click", short: "Adds passive clicks/sec.", baseCost: 12, scale: 1.88, maxLevel: 7 },
+    { id: "clickPower", name: "Click Value", short: "+1 point per click each level.", baseCost: 7, costStep: 2, maxLevel: 100 },
+    { id: "autoClick", name: "Auto Click", short: "+0.45 auto clicks/sec each level.", baseCost: 12, costStep: 3, maxLevel: 100 },
     { id: "comboTimer", name: "Combo Buffer", short: "Fast clicks keep combo longer.", baseCost: 15, scale: 1.7, maxLevel: 6 },
     { id: "critChance", name: "Lucky Clicks", short: "Tiny chance for critical pops.", baseCost: 18, scale: 1.78, maxLevel: 6 },
     { id: "critMult", name: "Crit Boost", short: "Critical clicks hit harder.", baseCost: 22, scale: 1.82, maxLevel: 6 }
@@ -895,6 +895,9 @@
   // ---------------------------------------------------------------------------
 
   function getUpgradeCost(upgrade, level) {
+    if (upgrade.costStep) {
+      return upgrade.baseCost + upgrade.costStep * level;
+    }
     return Math.round(upgrade.baseCost * Math.pow(upgrade.scale, level));
   }
 
@@ -1235,7 +1238,7 @@
       const level = clickerState.upgradeLevels[upgrade.id];
       const cost = getUpgradeCost(upgrade, level);
       const disabled = level >= upgrade.maxLevel || platformerState.disks < cost;
-      const label = level >= upgrade.maxLevel ? "MAX" : formatNumber(cost) + " disks";
+      const label = level >= upgrade.maxLevel ? "MAX" : formatNumber(cost);
       const col = index % shopCols;
       const row = Math.floor(index / shopCols);
       registerButton(
