@@ -123,7 +123,6 @@
     classic: [-0.35, -0.45],
     win95: [-0.35, -0.45],
     invert: [-0.35, -0.45],
-    thinking: [-0.35, -0.45],
     wizard: [-0.35, -0.45],
     glitch: [-0.35, -0.45],
     hand: [-0.05, -0.5]
@@ -1902,7 +1901,6 @@
     } else if (skin.draw === "ibeam") {
       drawIBeam(s, theme);
     } else if (skin.draw === "thinking") {
-      drawArrow(theme.light, theme.darkest, s, false);
       drawThinkingCircles(s, theme, time);
     } else if (skin.draw === "wizard") {
       drawArrow(theme.light, theme.darkest, s, true);
@@ -1945,7 +1943,7 @@
 
   function drawThinkingCircles(size, theme, time) {
     const count = 6;
-    ctx.fillStyle = theme.warn;
+    ctx.fillStyle = theme.accent;
     ctx.strokeStyle = theme.darkest;
     ctx.lineWidth = 1;
     for (let i = 0; i < count; i += 1) {
