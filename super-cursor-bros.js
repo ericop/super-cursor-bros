@@ -108,7 +108,7 @@
     { id: "classic", name: "Classic Arrow", draw: "classic", description: "The office default. Crisp, polite, union approved.", unlock: { type: "default" }, bonusText: "No bonus. Pure heritage." },
     { id: "win95", name: "Win95 Arrow", draw: "win95", description: "Sharper edges for more executive pointing.", unlock: { type: "buy", currency: "disks", amount: 12 }, bonusText: "No bonus. Just extra swagger." },
     { id: "hourglass", name: "Busy Hourglass", draw: "hourglass", description: "Please wait while the clicking intensifies.", unlock: { type: "buy", currency: "cursorPoints", amount: 120 }, bonus: { autoClick: 0.15 }, bonusText: "+0.15 auto clicks/sec." },
-    { id: "thinking", name: "Thinking Cursor", draw: "thinking", description: "A pointer with ideas above its pay grade.", unlock: { type: "milestone", metric: "bestCursorPoints", amount: 160, label: "Earn 160 cursor points in one run" }, bonus: { jumpBoost: 10 }, bonusText: "+10 jump strength." },
+    { id: "thinking", name: "Thinking Cursor", draw: "thinking", description: "A pointer with ideas above its pay grade.", unlock: { type: "milestone", metric: "lifetimeDisks", amount: 35, label: "Collect 35 floppy disks lifetime" }, bonus: { autoClick: 0.25, jumpBoost: 10 }, bonusText: "+0.25 auto clicks/sec and +10 jump." },
     { id: "invert", name: "Inverted Cursor", draw: "invert", description: "For the power user who reads manuals after midnight.", unlock: { type: "buy", currency: "disks", amount: 26 }, bonus: { critChance: 0.02 }, bonusText: "+2% crit chance." },
     { id: "hand", name: "Retro Hand", draw: "hand", description: "One finger, many ambitions.", unlock: { type: "buy", currency: "cursorPoints", amount: 220 }, bonus: { manualClick: 1 }, bonusText: "+1 manual click power." },
     { id: "crosshair", name: "Crosshair", draw: "crosshair", description: "Precision docking for floppy retrieval.", unlock: { type: "buy", currency: "cursorPoints", amount: 340 }, bonus: { magnet: 10 }, bonusText: "+10 pickup magnet radius." },
@@ -277,12 +277,12 @@
       }
       if (saved.meta) {
         metaState.unlockedSkins = Array.isArray(saved.meta.unlockedSkins) && saved.meta.unlockedSkins.length
-          ? saved.meta.unlockedSkins.filter(isKnownSkinId)
+          ? saved.meta.unlockedSkins.map(migrateSkinId).filter(isKnownSkinId)
           : ["classic"];
         if (!metaState.unlockedSkins.includes("classic")) {
           metaState.unlockedSkins.unshift("classic");
         }
-        metaState.equippedSkin = isKnownSkinId(saved.meta.equippedSkin) ? saved.meta.equippedSkin : "classic";
+        metaState.equippedSkin = isKnownSkinId(migrateSkinId(saved.meta.equippedSkin)) ? migrateSkinId(saved.meta.equippedSkin) : "classic";
         if (!metaState.unlockedSkins.includes(metaState.equippedSkin)) {
           metaState.equippedSkin = "classic";
         }
@@ -2176,6 +2176,11 @@
       return skin.unlock.label;
     }
     return "Unlocked";
+  }
+
+  function migrateSkinId(id) {
+    // The Spinner Cursor was folded into the Thinking Cursor.
+    return id === "spin" ? "thinking" : id;
   }
 
   function isKnownSkinId(id) {
