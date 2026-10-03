@@ -106,7 +106,7 @@
 
   const SKINS = [
     { id: "classic", name: "Classic Arrow", draw: "classic", description: "The office default. Crisp, polite, union approved.", unlock: { type: "default" }, bonusText: "No bonus. Pure heritage." },
-    { id: "win95", name: "Win95 Arrow", draw: "win95", description: "Sharper edges for more executive pointing.", unlock: { type: "buy", currency: "disks", amount: 12 }, bonusText: "No bonus. Just extra swagger." },
+    { id: "win95", name: "Win95 Arrow", draw: "win95", description: "Waves the flag of the operating system that started it all.", unlock: { type: "buy", currency: "disks", amount: 12 }, bonusText: "No bonus. Just extra swagger." },
     { id: "hourglass", name: "Busy Hourglass", draw: "hourglass", description: "Please wait while the clicking intensifies.", unlock: { type: "buy", currency: "cursorPoints", amount: 120 }, bonus: { autoClick: 0.15 }, bonusText: "+0.15 auto clicks/sec." },
     { id: "thinking", name: "Thinking Cursor", draw: "thinking", description: "A pointer with ideas above its pay grade.", unlock: { type: "milestone", metric: "lifetimeDisks", amount: 35, label: "Collect 35 floppy disks lifetime" }, bonus: { autoClick: 0.25, jumpBoost: 10 }, bonusText: "+0.25 auto clicks, +10 jump." },
     { id: "invert", name: "Inverted Cursor", draw: "invert", description: "For the power user who reads manuals after midnight.", unlock: { type: "buy", currency: "disks", amount: 26 }, bonus: { critChance: 0.02 }, bonusText: "+2% crit chance." },
@@ -1891,7 +1891,10 @@
     if (skin.draw === "classic" || skin.draw === "win95" || skin.draw === "invert") {
       const fill = skin.draw === "invert" ? theme.darkest : theme.light;
       const outline = skin.draw === "invert" ? theme.light : theme.darkest;
-      drawArrow(fill, outline, s, skin.draw === "win95");
+      drawArrow(fill, outline, s, false);
+      if (skin.draw === "win95") {
+        drawWindowsFlag(s, time);
+      }
     } else if (skin.draw === "hourglass") {
       drawHourglass(s, theme);
     } else if (skin.draw === "hand") {
@@ -1939,6 +1942,44 @@
       ctx.fillStyle = outline;
       ctx.fillRect(-size * 0.02, size * 0.12, size * 0.08, size * 0.1);
     }
+  }
+
+  function drawWindowsFlag(size, time) {
+    const pane = size * 0.19;
+    const gap = size * 0.04;
+    const left = size * 0.34;
+    const top = -size * 0.08;
+    const wave = size * 0.05;
+    const panes = [
+      { col: 0, row: 0, color: "#ff2a1a" },
+      { col: 1, row: 0, color: "#19c11e" },
+      { col: 0, row: 1, color: "#1e4dff" },
+      { col: 1, row: 1, color: "#ffd500" }
+    ];
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = "round";
+
+    panes.forEach(function (p) {
+      const x = left + p.col * (pane + gap);
+      const y = top + p.row * (pane + gap) - p.col * wave;
+      const bend = Math.sin(time * 4 + p.col) * wave * 0.6;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + pane / 2, y - wave + bend, x + pane, y - wave);
+      ctx.lineTo(x + pane, y + pane - wave);
+      ctx.quadraticCurveTo(x + pane / 2, y + pane - wave + bend, x, y + pane);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      if (p.col === 0) {
+        ctx.fillRect(x - size * 0.09, y + pane * 0.2, size * 0.05, pane * 0.25);
+        ctx.fillRect(x - size * 0.09, y + pane * 0.6, size * 0.05, pane * 0.25);
+        ctx.fillRect(x - size * 0.16, y + pane * 0.4, size * 0.04, pane * 0.25);
+      }
+    });
   }
 
   function drawThinkingCircles(size, theme, time) {
