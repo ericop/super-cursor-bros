@@ -1867,11 +1867,10 @@
       const fill = skin.draw === "invert" ? theme.darkest : theme.light;
       const outline = skin.draw === "invert" ? theme.light : theme.darkest;
       drawArrow(fill, outline, s, skin.draw === "win95");
-    } else if (skin.draw === "hourglass" || skin.draw === "spinner") {
-      if (skin.draw === "spinner") {
-        ctx.rotate(Math.sin(time * 3) * 0.2 + time * 1.8);
-      }
+    } else if (skin.draw === "hourglass") {
       drawHourglass(s, theme);
+    } else if (skin.draw === "spinner") {
+      drawSpinner(s, theme, time);
     } else if (skin.draw === "hand") {
       drawHandPointer(s, theme);
     } else if (skin.draw === "crosshair") {
@@ -1951,25 +1950,77 @@
     ctx.fill();
   }
 
+  function drawSpinner(size, theme, time) {
+    const dots = 8;
+    const lead = Math.floor(time * 12) % dots;
+    ctx.fillStyle = theme.accent;
+    ctx.strokeStyle = theme.darkest;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < dots; i += 1) {
+      const age = (lead - i + dots) % dots;
+      const angle = (i / dots) * Math.PI * 2 - Math.PI / 2;
+      ctx.globalAlpha = 1 - age * 0.11;
+      ctx.beginPath();
+      ctx.arc(Math.cos(angle) * size * 0.34, Math.sin(angle) * size * 0.34, size * (0.11 - age * 0.007), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function fingerPath(x, y, w, h) {
+    const r = w / 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y + h);
+    ctx.lineTo(x, y + r);
+    ctx.arc(x + r, y + r, r, Math.PI, 0);
+    ctx.lineTo(x + w, y + h);
+    ctx.closePath();
+  }
+
   function drawHandPointer(size, theme) {
+    const u = size;
     ctx.fillStyle = theme.light;
     ctx.strokeStyle = theme.darkest;
     ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+
+    ctx.save();
+    ctx.translate(-u * 0.1, u * 0.14);
+    ctx.rotate(-0.9);
+    fingerPath(-u * 0.065, -u * 0.26, u * 0.13, u * 0.3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
     ctx.beginPath();
-    ctx.moveTo(-size * 0.15, size * 0.45);
-    ctx.lineTo(-size * 0.15, -size * 0.28);
-    ctx.lineTo(0, -size * 0.28);
-    ctx.lineTo(0, size * 0.03);
-    ctx.lineTo(size * 0.1, size * 0.03);
-    ctx.lineTo(size * 0.1, -size * 0.18);
-    ctx.lineTo(size * 0.24, -size * 0.18);
-    ctx.lineTo(size * 0.24, size * 0.08);
-    ctx.lineTo(size * 0.34, size * 0.08);
-    ctx.lineTo(size * 0.34, size * 0.22);
-    ctx.lineTo(size * 0.18, size * 0.45);
+    ctx.moveTo(-u * 0.12, u * 0.0);
+    ctx.lineTo(u * 0.38, u * 0.0);
+    ctx.lineTo(u * 0.38, u * 0.28);
+    ctx.quadraticCurveTo(u * 0.36, u * 0.4, u * 0.28, u * 0.4);
+    ctx.lineTo(-u * 0.04, u * 0.4);
+    ctx.quadraticCurveTo(-u * 0.12, u * 0.36, -u * 0.12, u * 0.24);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+
+    fingerPath(u * 0.26, -u * 0.06, u * 0.12, u * 0.2);
+    ctx.fill();
+    ctx.stroke();
+    fingerPath(u * 0.14, -u * 0.1, u * 0.12, u * 0.24);
+    ctx.fill();
+    ctx.stroke();
+    fingerPath(u * 0.02, -u * 0.12, u * 0.12, u * 0.26);
+    ctx.fill();
+    ctx.stroke();
+
+    fingerPath(-u * 0.12, -u * 0.5, u * 0.14, u * 0.62);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = theme.accent;
+    ctx.fillRect(-u * 0.08, u * 0.4, u * 0.42, u * 0.1);
+    ctx.strokeRect(-u * 0.08, u * 0.4, u * 0.42, u * 0.1);
   }
 
   function drawCrosshair(size, theme, time) {
