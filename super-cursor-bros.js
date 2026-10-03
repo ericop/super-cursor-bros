@@ -108,7 +108,7 @@
     { id: "classic", name: "Classic Arrow", draw: "classic", description: "The office default. Crisp, polite, union approved.", unlock: { type: "default" }, bonusText: "No bonus. Pure heritage." },
     { id: "win95", name: "Win95 Arrow", draw: "win95", description: "Sharper edges for more executive pointing.", unlock: { type: "buy", currency: "disks", amount: 12 }, bonusText: "No bonus. Just extra swagger." },
     { id: "hourglass", name: "Busy Hourglass", draw: "hourglass", description: "Please wait while the clicking intensifies.", unlock: { type: "buy", currency: "cursorPoints", amount: 120 }, bonus: { autoClick: 0.15 }, bonusText: "+0.15 auto clicks/sec." },
-    { id: "thinking", name: "Thinking Cursor", draw: "thinking", description: "A pointer with ideas above its pay grade.", unlock: { type: "milestone", metric: "lifetimeDisks", amount: 35, label: "Collect 35 floppy disks lifetime" }, bonus: { autoClick: 0.25, jumpBoost: 10 }, bonusText: "+0.25 auto clicks/sec and +10 jump." },
+    { id: "thinking", name: "Thinking Cursor", draw: "thinking", description: "A pointer with ideas above its pay grade.", unlock: { type: "milestone", metric: "lifetimeDisks", amount: 35, label: "Collect 35 floppy disks lifetime" }, bonus: { autoClick: 0.25, jumpBoost: 10 }, bonusText: "+0.25 auto clicks, +10 jump." },
     { id: "invert", name: "Inverted Cursor", draw: "invert", description: "For the power user who reads manuals after midnight.", unlock: { type: "buy", currency: "disks", amount: 26 }, bonus: { critChance: 0.02 }, bonusText: "+2% crit chance." },
     { id: "hand", name: "Retro Hand", draw: "hand", description: "One finger, many ambitions.", unlock: { type: "buy", currency: "cursorPoints", amount: 220 }, bonus: { manualClick: 1 }, bonusText: "+1 manual click power." },
     { id: "crosshair", name: "Crosshair", draw: "crosshair", description: "Precision docking for floppy retrieval.", unlock: { type: "buy", currency: "cursorPoints", amount: 340 }, bonus: { magnet: 10 }, bonusText: "+10 pickup magnet radius." },
@@ -117,6 +117,17 @@
     { id: "ghost", name: "Pixel Ghost", draw: "ghost", description: "Haunts old control panels and bargain bins.", unlock: { type: "milestone", metric: "comboPeak", amount: 2, label: "Reach a 2.0x click combo" }, bonusText: "Cosmetic only. Boo, but lovingly." },
     { id: "glitch", name: "Secret Glitch", draw: "glitch", description: "When the cursor stares back at the operating system.", unlock: { type: "milestone", metric: "dualMastery", amount: 1, label: "Own 250 cursor points earned and 80 floppy disks lifetime" }, bonus: { manualClick: 0.5, critChance: 0.01 }, bonusText: "+0.5 click power and +1% crit chance." }
   ];
+
+  // Where each skin's "click point" sits, as a fraction of its size from the skin's center.
+  const POINTER_HOTSPOTS = {
+    classic: [-0.35, -0.45],
+    win95: [-0.35, -0.45],
+    invert: [-0.35, -0.45],
+    thinking: [-0.35, -0.45],
+    wizard: [-0.35, -0.45],
+    glitch: [-0.35, -0.45],
+    hand: [-0.05, -0.5]
+  };
 
   const canvas = document.getElementById("gameCanvas");
   const fullscreenButton = document.getElementById("fullscreenButton");
@@ -136,7 +147,7 @@
     now: performance.now(),
     elapsed: 0,
     uiRegions: [],
-    mouse: { x: 0, y: 0, down: false },
+    mouse: { x: 0, y: 0, down: false, inside: false },
     hoveredTooltip: "",
     hoveredTooltipPos: { x: 0, y: 0 },
     keys: {},
@@ -331,7 +342,10 @@
     canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
     canvas.addEventListener("touchcancel", handleTouchEnd, { passive: false });
     window.addEventListener("mouseup", handlePointerUp);
-    canvas.addEventListener("mouseleave", handlePointerUp);
+    canvas.addEventListener("mouseleave", function () {
+      runtime.mouse.inside = false;
+      handlePointerUp();
+    });
     canvas.addEventListener("contextmenu", function (event) {
       event.preventDefault();
     });
@@ -385,6 +399,7 @@
 
   function handlePointerMove(event) {
     const point = getCanvasPoint(event);
+    runtime.mouse.inside = true;
     runtime.mouse.x = point.x;
     runtime.mouse.y = point.y;
     if (runtime.drag && runtime.drag.type === "volume") {
@@ -422,6 +437,7 @@
 
   function handleTouchStart(event) {
     event.preventDefault();
+    runtime.mouse.inside = false;
     runtime.mouse.down = true;
     unlockAudio();
     syncTouchPointer(event.touches);
@@ -1127,6 +1143,16 @@
     if (runtime.hoveredTooltip) {
       drawTooltip(theme, runtime.hoveredTooltip, runtime.hoveredTooltipPos.x, runtime.hoveredTooltipPos.y);
     }
+    if (runtime.mouse.inside) {
+      drawMousePointer(theme);
+    }
+  }
+
+  function drawMousePointer(theme) {
+    const size = 24;
+    const skin = getSkin();
+    const hotspot = POINTER_HOTSPOTS[skin.draw] || [0, 0];
+    drawCursorSkin(skin, runtime.mouse.x - hotspot[0] * size, runtime.mouse.y - hotspot[1] * size, size, theme, runtime.elapsed, 1);
   }
 
   function renderPlaying(theme, dimmed) {
@@ -1876,12 +1902,7 @@
       drawIBeam(s, theme);
     } else if (skin.draw === "thinking") {
       drawArrow(theme.light, theme.darkest, s, false);
-      ctx.fillStyle = theme.warn;
-      ctx.beginPath();
-      ctx.arc(s * 0.45, -s * 0.45, s * 0.1, 0, Math.PI * 2);
-      ctx.arc(s * 0.63, -s * 0.6, s * 0.14, 0, Math.PI * 2);
-      ctx.arc(s * 0.88, -s * 0.82, s * 0.18, 0, Math.PI * 2);
-      ctx.fill();
+      drawThinkingCircles(s, theme, time);
     } else if (skin.draw === "wizard") {
       drawArrow(theme.light, theme.darkest, s, true);
       ctx.fillStyle = theme.warn;
@@ -1919,6 +1940,22 @@
       ctx.fillStyle = outline;
       ctx.fillRect(-size * 0.02, size * 0.12, size * 0.08, size * 0.1);
     }
+  }
+
+  function drawThinkingCircles(size, theme, time) {
+    const count = 6;
+    ctx.fillStyle = theme.warn;
+    ctx.strokeStyle = theme.darkest;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < count; i += 1) {
+      const angle = time * 3 - i * 0.55;
+      ctx.globalAlpha = 1 - i * 0.13;
+      ctx.beginPath();
+      ctx.arc(Math.cos(angle) * size * 0.62, Math.sin(angle) * size * 0.62, size * (0.13 - i * 0.015), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   function drawGlitchArrow(offsetX, offsetY, size, color) {
