@@ -43,7 +43,6 @@
       border: 2px solid #0a0a0a;
       box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #4a4a4a;
       touch-action: none;
-      cursor: none;
     }
     .toolbar {
       width: min(96vw, 840px);
@@ -89,6 +88,11 @@
       <canvas id="gameCanvas" width="840" height="320" aria-label="Super Cursor Bros game canvas"></canvas>
     </div>
   </div>
-  <script src="super-cursor-bros.js"></script>
+  <script>
+    // GitHub Pages caches files for 10 minutes, so a plain reload can pair this page with stale game code.
+    const gameScript = document.createElement("script");
+    gameScript.src = "super-cursor-bros.js?v=" + Date.now();
+    document.body.appendChild(gameScript);
+  </script>
 </body>
 </html>

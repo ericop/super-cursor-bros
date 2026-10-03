@@ -335,6 +335,7 @@
   // ---------------------------------------------------------------------------
 
   function bindEvents() {
+    canvas.style.cursor = "none";
     canvas.addEventListener("mousemove", handlePointerMove);
     canvas.addEventListener("mousedown", handlePointerDown);
     canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
