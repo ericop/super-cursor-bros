@@ -1896,7 +1896,7 @@
         drawWindowsFlag(s, time);
       }
     } else if (skin.draw === "hourglass") {
-      drawHourglass(s, theme);
+      drawHourglass(s, theme, time);
     } else if (skin.draw === "hand") {
       drawHandPointer(s, theme);
     } else if (skin.draw === "crosshair") {
@@ -2005,23 +2005,66 @@
     ctx.restore();
   }
 
-  function drawHourglass(size, theme) {
-    ctx.strokeStyle = theme.darkest;
+  function drawHourglass(size, theme, time) {
+    const drainTime = 2.4;
+    const flipTime = 0.5;
+    const phase = time % (drainTime + flipTime);
+    const drained = Math.min(phase / drainTime, 1);
+    if (phase > drainTime) {
+      const f = (phase - drainTime) / flipTime;
+      ctx.rotate(Math.PI * (f * f * (3 - 2 * f)));
+    }
+
+    const w = size * 0.16;
+    const h = size * 0.34;
     ctx.lineWidth = 2;
+    ctx.strokeStyle = theme.darkest;
+    ctx.fillStyle = theme.lightSoft;
+    ctx.beginPath();
+    ctx.moveTo(-w, -h);
+    ctx.lineTo(w, -h);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(w, h);
+    ctx.lineTo(-w, h);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.fillStyle = theme.warn;
-    ctx.strokeRect(-size * 0.22, -size * 0.44, size * 0.44, size * 0.88);
+    const topK = Math.sqrt(1 - drained);
+    if (topK > 0) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-w * topK, -h * topK);
+      ctx.lineTo(w * topK, -h * topK);
+      ctx.closePath();
+      ctx.fill();
+    }
+    const emptyK = Math.sqrt(1 - drained);
     ctx.beginPath();
-    ctx.moveTo(-size * 0.16, -size * 0.34);
-    ctx.lineTo(size * 0.16, -size * 0.34);
-    ctx.lineTo(0, 0);
+    ctx.moveTo(-w, h);
+    ctx.lineTo(w, h);
+    ctx.lineTo(w * emptyK, h * emptyK);
+    ctx.lineTo(-w * emptyK, h * emptyK);
     ctx.closePath();
     ctx.fill();
+    if (drained < 1) {
+      ctx.fillRect(-size * 0.015, 0, size * 0.03, h * emptyK);
+    }
+
     ctx.beginPath();
-    ctx.moveTo(-size * 0.16, size * 0.34);
-    ctx.lineTo(size * 0.16, size * 0.34);
+    ctx.moveTo(-w, -h);
+    ctx.lineTo(w, -h);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(w, h);
+    ctx.lineTo(-w, h);
     ctx.lineTo(0, 0);
     ctx.closePath();
-    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = theme.darkest;
+    ctx.fillRect(-size * 0.24, -size * 0.46, size * 0.48, size * 0.1);
+    ctx.fillRect(-size * 0.24, size * 0.36, size * 0.48, size * 0.1);
   }
 
   function fingerPath(x, y, w, h) {
