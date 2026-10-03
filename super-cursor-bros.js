@@ -108,12 +108,11 @@
     { id: "classic", name: "Classic Arrow", draw: "classic", description: "The office default. Crisp, polite, union approved.", unlock: { type: "default" }, bonusText: "No bonus. Pure heritage." },
     { id: "win95", name: "Win95 Arrow", draw: "win95", description: "Sharper edges for more executive pointing.", unlock: { type: "buy", currency: "disks", amount: 12 }, bonusText: "No bonus. Just extra swagger." },
     { id: "hourglass", name: "Busy Hourglass", draw: "hourglass", description: "Please wait while the clicking intensifies.", unlock: { type: "buy", currency: "cursorPoints", amount: 120 }, bonus: { autoClick: 0.15 }, bonusText: "+0.15 auto clicks/sec." },
-    { id: "spin", name: "Spinner Cursor", draw: "spinner", description: "A deluxe loading icon for dramatic entrances.", unlock: { type: "milestone", metric: "lifetimeDisks", amount: 35, label: "Collect 35 floppy disks lifetime" }, bonus: { autoClick: 0.25 }, bonusText: "+0.25 auto clicks/sec." },
+    { id: "thinking", name: "Thinking Cursor", draw: "thinking", description: "A pointer with ideas above its pay grade.", unlock: { type: "milestone", metric: "bestCursorPoints", amount: 160, label: "Earn 160 cursor points in one run" }, bonus: { jumpBoost: 10 }, bonusText: "+10 jump strength." },
     { id: "invert", name: "Inverted Cursor", draw: "invert", description: "For the power user who reads manuals after midnight.", unlock: { type: "buy", currency: "disks", amount: 26 }, bonus: { critChance: 0.02 }, bonusText: "+2% crit chance." },
     { id: "hand", name: "Retro Hand", draw: "hand", description: "One finger, many ambitions.", unlock: { type: "buy", currency: "cursorPoints", amount: 220 }, bonus: { manualClick: 1 }, bonusText: "+1 manual click power." },
     { id: "crosshair", name: "Crosshair", draw: "crosshair", description: "Precision docking for floppy retrieval.", unlock: { type: "buy", currency: "cursorPoints", amount: 340 }, bonus: { magnet: 10 }, bonusText: "+10 pickup magnet radius." },
     { id: "ibeam", name: "I-Beam", draw: "ibeam", description: "Drafting memos and combo chains in equal measure.", unlock: { type: "buy", currency: "disks", amount: 42 }, bonus: { comboWindow: 0.25 }, bonusText: "+0.25s combo time." },
-    { id: "thinking", name: "Thinking Cursor", draw: "thinking", description: "A pointer with ideas above its pay grade.", unlock: { type: "milestone", metric: "bestCursorPoints", amount: 160, label: "Earn 160 cursor points in one run" }, bonus: { jumpBoost: 10 }, bonusText: "+10 jump strength." },
     { id: "wizard", name: "System Wizard", draw: "wizard", description: "Installed from a suspiciously wonderful floppy.", unlock: { type: "buy", currency: "disks", amount: 68 }, bonus: { critMult: 0.2 }, bonusText: "+0.2 crit multiplier." },
     { id: "ghost", name: "Pixel Ghost", draw: "ghost", description: "Haunts old control panels and bargain bins.", unlock: { type: "milestone", metric: "comboPeak", amount: 2, label: "Reach a 2.0x click combo" }, bonusText: "Cosmetic only. Boo, but lovingly." },
     { id: "glitch", name: "Secret Glitch", draw: "glitch", description: "When the cursor stares back at the operating system.", unlock: { type: "milestone", metric: "dualMastery", amount: 1, label: "Own 250 cursor points earned and 80 floppy disks lifetime" }, bonus: { manualClick: 0.5, critChance: 0.01 }, bonusText: "+0.5 click power and +1% crit chance." }
@@ -1869,8 +1868,6 @@
       drawArrow(fill, outline, s, skin.draw === "win95");
     } else if (skin.draw === "hourglass") {
       drawHourglass(s, theme);
-    } else if (skin.draw === "spinner") {
-      drawSpinner(s, theme, time);
     } else if (skin.draw === "hand") {
       drawHandPointer(s, theme);
     } else if (skin.draw === "crosshair") {
@@ -1950,24 +1947,6 @@
     ctx.fill();
   }
 
-  function drawSpinner(size, theme, time) {
-    const dots = 8;
-    const lead = Math.floor(time * 12) % dots;
-    ctx.fillStyle = theme.accent;
-    ctx.strokeStyle = theme.darkest;
-    ctx.lineWidth = 1;
-    for (let i = 0; i < dots; i += 1) {
-      const age = (lead - i + dots) % dots;
-      const angle = (i / dots) * Math.PI * 2 - Math.PI / 2;
-      ctx.globalAlpha = 1 - age * 0.11;
-      ctx.beginPath();
-      ctx.arc(Math.cos(angle) * size * 0.34, Math.sin(angle) * size * 0.34, size * (0.11 - age * 0.007), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-  }
-
   function fingerPath(x, y, w, h) {
     const r = w / 2;
     ctx.beginPath();
@@ -1986,9 +1965,9 @@
     ctx.lineJoin = "round";
 
     ctx.save();
-    ctx.translate(-u * 0.1, u * 0.14);
-    ctx.rotate(-0.9);
-    fingerPath(-u * 0.065, -u * 0.26, u * 0.13, u * 0.3);
+    ctx.translate(-u * 0.1, u * 0.18);
+    ctx.rotate(-0.6);
+    fingerPath(-u * 0.065, -u * 0.28, u * 0.13, u * 0.32);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -1996,10 +1975,10 @@
     ctx.beginPath();
     ctx.moveTo(-u * 0.12, u * 0.0);
     ctx.lineTo(u * 0.38, u * 0.0);
-    ctx.lineTo(u * 0.38, u * 0.28);
-    ctx.quadraticCurveTo(u * 0.36, u * 0.4, u * 0.28, u * 0.4);
-    ctx.lineTo(-u * 0.04, u * 0.4);
-    ctx.quadraticCurveTo(-u * 0.12, u * 0.36, -u * 0.12, u * 0.24);
+    ctx.lineTo(u * 0.38, u * 0.26);
+    ctx.quadraticCurveTo(u * 0.36, u * 0.4, u * 0.26, u * 0.5);
+    ctx.lineTo(-u * 0.02, u * 0.5);
+    ctx.quadraticCurveTo(-u * 0.1, u * 0.42, -u * 0.12, u * 0.3);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -2017,10 +1996,6 @@
     fingerPath(-u * 0.12, -u * 0.5, u * 0.14, u * 0.62);
     ctx.fill();
     ctx.stroke();
-
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(-u * 0.08, u * 0.4, u * 0.42, u * 0.1);
-    ctx.strokeRect(-u * 0.08, u * 0.4, u * 0.42, u * 0.1);
   }
 
   function drawCrosshair(size, theme, time) {
