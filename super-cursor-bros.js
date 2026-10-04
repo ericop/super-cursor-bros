@@ -1897,10 +1897,15 @@
       return;
     }
 
-    if (skin.draw === "classic" || skin.draw === "win95" || skin.draw === "invert") {
-      const fill = skin.draw === "invert" ? theme.darkest : theme.light;
-      const outline = skin.draw === "invert" ? theme.light : theme.darkest;
-      drawArrow(fill, outline, s, false);
+    if (skin.draw === "invert") {
+      // "difference" with white flips every pixel underneath, like the real inverted Windows cursor.
+      ctx.globalCompositeOperation = "difference";
+      ctx.fillStyle = "#ffffff";
+      arrowPath(s);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    } else if (skin.draw === "classic" || skin.draw === "win95") {
+      drawArrow(theme.light, theme.darkest, s, false);
       if (skin.draw === "win95") {
         drawWindowsFlag(s, time);
       }
@@ -1925,6 +1930,7 @@
       ctx.fill();
       ctx.fillStyle = theme.accent;
       ctx.fillRect(-s * 0.16, -s * 0.44, s * 0.36, s * 0.08);
+      drawWizardStaff(s, theme, time);
     } else if (skin.draw === "ghost") {
       drawGhost(s, theme, time);
     }
@@ -1932,10 +1938,7 @@
     ctx.restore();
   }
 
-  function drawArrow(fill, outline, size, sharp) {
-    ctx.fillStyle = fill;
-    ctx.strokeStyle = outline;
-    ctx.lineWidth = 2;
+  function arrowPath(size) {
     ctx.beginPath();
     ctx.moveTo(-size * 0.35, -size * 0.45);
     ctx.lineTo(size * 0.2, size * 0.05);
@@ -1945,12 +1948,57 @@
     ctx.lineTo(-size * 0.1, size * 0.14);
     ctx.lineTo(-size * 0.2, size * 0.28);
     ctx.closePath();
+  }
+
+  function drawArrow(fill, outline, size, sharp) {
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 2;
+    arrowPath(size);
     ctx.fill();
     ctx.stroke();
     if (sharp) {
       ctx.fillStyle = outline;
       ctx.fillRect(-size * 0.02, size * 0.12, size * 0.08, size * 0.1);
     }
+  }
+
+  function drawWizardStaff(size, theme, time) {
+    ctx.strokeStyle = theme.darkest;
+    ctx.lineWidth = size * 0.1 + 2;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(size * 0.34, size * 0.52);
+    ctx.lineTo(size * 0.52, -size * 0.3);
+    ctx.stroke();
+    ctx.strokeStyle = "#8b5a2b";
+    ctx.lineWidth = size * 0.1;
+    ctx.stroke();
+    ctx.lineCap = "butt";
+
+    const glow = 0.5 + Math.sin(time * 5) * 0.5;
+    ctx.globalAlpha = 0.25 + glow * 0.35;
+    ctx.fillStyle = theme.accent;
+    ctx.beginPath();
+    ctx.arc(size * 0.54, -size * 0.4, size * (0.16 + glow * 0.05), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = theme.darkest;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(size * 0.54, -size * 0.4, size * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+    const sparkle = size * (0.06 + glow * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(size * 0.54 - sparkle, -size * 0.4);
+    ctx.lineTo(size * 0.54 + sparkle, -size * 0.4);
+    ctx.moveTo(size * 0.54, -size * 0.4 - sparkle);
+    ctx.lineTo(size * 0.54, -size * 0.4 + sparkle);
+    ctx.stroke();
   }
 
   function drawWindowsFlag(size, time) {
