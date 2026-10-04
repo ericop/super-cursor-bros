@@ -1270,18 +1270,23 @@
     const panel = LAYOUT.right;
     drawWindow(panel.x, panel.y, panel.w, panel.h, "Platformer Desk Run", theme);
 
+    const pauseRect = { x: panel.x + panel.w - 66, y: panel.y + 3, w: 58, h: 16 };
     registerButton(
-      { x: panel.x + panel.w - 30, y: panel.y + 3, w: 22, h: 16 },
-      "II",
+      pauseRect,
+      "",
       function () {
         gameState.mode = GAME_STATES.PAUSED;
       },
       {
         theme: theme,
         small: true,
-        tooltip: "Pause the run."
+        tooltip: "Pause the run. (Esc also pauses.)"
       }
     );
+    ctx.fillStyle = theme.text;
+    ctx.fillRect(pauseRect.x + 7, pauseRect.y + 4, 3, 8);
+    ctx.fillRect(pauseRect.x + 12, pauseRect.y + 4, 3, 8);
+    drawText("Pause", pauseRect.x + 20, pauseRect.y + 10, 10, true, theme.text);
 
     const inner = {
       x: panel.x + 10,
@@ -1585,13 +1590,14 @@
     );
 
     drawText("Music volume", 430, 106, 12, true, theme.text);
-    const sliderRect = { x: 430, y: 126, w: 138, h: 12 };
+    const sliderRect = { x: 430, y: 126, w: 120, h: 12 };
     drawSlider(sliderRect, settingsState.volume, theme);
     addUiRegion({ type: "slider", rect: sliderRect, disabled: false });
 
-    drawText(Math.round(settingsState.volume * 100) + "%", 576, 137, 11, false, theme.textMuted);
+    drawText(Math.round(settingsState.volume * 100) + "%", 558, 137, 11, false, theme.textMuted);
     drawText("Escape also resumes from pause.", 430, 182, 11, false, theme.textMuted);
-    drawText("Dark mode keeps the old-school contrast but swaps to a high-contrast desk.", 430, 204, 10, false, theme.textMuted);
+    drawText("Dark mode keeps the old-school", 430, 204, 10, false, theme.textMuted);
+    drawText("look with a high-contrast desk.", 430, 218, 10, false, theme.textMuted);
   }
 
   function renderConfirmMenu(theme) {
