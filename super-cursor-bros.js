@@ -1345,7 +1345,7 @@
     const x = 170;
     const y = 42;
     const w = 500;
-    const h = 236;
+    const h = 250;
 
     drawWindow(x, y, w, h, "Program Manager", theme);
     drawText("Super Cursor Bros", x + 24, y + 48, 28, true, theme.accent);
@@ -1381,7 +1381,7 @@
       },
       { label: "Instructions", onClick: function () { gameState.skinReturnState = GAME_STATES.MAIN_MENU; gameState.mode = GAME_STATES.INSTRUCTIONS; } },
       { label: "Cursor Skins", onClick: function () { gameState.skinReturnState = GAME_STATES.MAIN_MENU; gameState.mode = GAME_STATES.SKIN_SELECT; } },
-      { label: "Toggle Fullscreen", onClick: function () { toggleFullscreen(); } }
+      { label: "Fullscreen", onClick: function () { toggleFullscreen(); } }
     ];
 
     buttons.forEach(function (button, index) {
