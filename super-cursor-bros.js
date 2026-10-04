@@ -1404,17 +1404,17 @@
       "Right panel: click or tap where you want the cursor to walk, or use WASD / arrows.",
       "W, Up, or Space jumps. S or Down helps you fast-fall. Higher click targets auto-jump.",
       "Collect every floppy disk, then touch the SAVE terminal for a wave bonus.",
-      "Spend Cursor Points on the right shop to improve movement, jumps, disk value, spawns, and magnet pull.",
-      "Cursor skins are shared cosmetic gear with tiny flavor bonuses. Some are bought, some unlock by milestones.",
+      "Spend Cursor Points in the right shop on speed, jumps, disk value, spawns, and magnet pull.",
+      "Cursor skins change your look and give tiny bonuses. Buy some, unlock others with milestones.",
       "Escape pauses the game. The pause menu also handles audio, dark mode, and returning to menu.",
       "The whole point: both halves feed each other, so keep bouncing between clicking and platforming."
     ];
 
     lines.forEach(function (line, index) {
-      drawText(line, 112, 62 + index * 24, 13, false, theme.text);
+      drawText(line, 112, 58 + index * 20, 12, false, theme.text);
     });
 
-    drawText("Tip: the hand skin helps clicking, crosshair helps collecting, and I-Beam is a combo nerd.", 112, 248, 11, false, theme.textMuted);
+    drawText("Tip: the hand skin helps clicking, crosshair helps collecting, and I-Beam is a combo nerd.", 112, 244, 11, false, theme.textMuted);
     registerButton(
       { x: 620, y: 254, w: 102, h: 20 },
       "Back",
